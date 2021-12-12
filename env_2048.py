@@ -33,7 +33,7 @@ SIZE_GRID = (c.GRID_LEN, c.GRID_LEN)
 MAX_VALUE = 2048
 
 
-class Env_2048(gym.Env, Frame):
+class Env_2048(gym.Env): #, Frame):
     """2048 environment that follows gym interface
 
     Description:
@@ -66,9 +66,6 @@ class Env_2048(gym.Env, Frame):
         super(Env_2048, self).__init__()
 
         # Define action and observation space
-        # They must be gym.spaces objects
-
-        # Example when using discrete actions:
         self.action_space = spaces.Discrete(N_DISCRETE_ACTIONS)
         self.action_logic_map = {0: logic.up,
                                  1: logic.down,

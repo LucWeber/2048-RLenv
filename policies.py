@@ -3,7 +3,10 @@ import torch as t
 import models
 import os
 
+t.cuda.set_device(0)
 device = t.device('cuda:0' if t.cuda.is_available() else 'cpu')
+
+
 
 class RandomPolicy:
     def __init__(self, env, verbose=0):
@@ -43,7 +46,10 @@ class baselineREINFORCEpolicy:
         input_size = env.observation_space.shape[0] * env.observation_space.shape[1]
         self.model = getattr(models, model_type)(input_size=input_size,
                                                  num_actions=env.action_space.n,
-                                                 learning_rate=self.lr).to(device)
+                                                 learning_rate=self.lr)
+
+        self.model = self.model.to(device)
+
         self.model_type = model_type
         self.verbose = verbose
         self.t_max = t_max
