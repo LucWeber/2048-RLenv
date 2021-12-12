@@ -6,8 +6,8 @@ This is a [OpenAI-gym](https://github.com/openai/gym)-styled RL-environment for 
 To set things up, run:
 
     $ conda create -n 2048-RL python=3.8
-    $ pip install -r requirements.txt
     $ source activate 2048-RL
+    $ pip install -r requirements.txt
 
 To train a policy, run:
     
