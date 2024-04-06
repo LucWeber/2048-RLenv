@@ -45,9 +45,9 @@ class baselineREINFORCEpolicy:
     adapt such that you cannot see where it is from
     """
 
-    def __init__(self, env, model_type='MLP', t_max=1000, verbose=0, gamma=0.99, epsilon=0.0):
+    def __init__(self, env, model_type='MLP', t_max=1000, verbose=0, gamma=0.99, epsilon=0.0, entropy_term=0.1):
         self.env = env
-        self.lr = 1e-3
+        self.lr = 1e-4
         # TODO: generalize this to other dimensionality:
         input_size = env.observation_space.shape[0] * env.observation_space.shape[1]
         self.model = getattr(models, model_type)(input_size=input_size,
@@ -61,6 +61,7 @@ class baselineREINFORCEpolicy:
         self.t_max = t_max
         self.epsilon = epsilon # for epsilon-greedy action selection
         self.gamma = gamma
+        self.entropy_term = entropy_term
         self.training_steps = 0
         self.total_n_illegal_moves = []
 
@@ -115,7 +116,7 @@ class baselineREINFORCEpolicy:
         policy_gradient.backward()
         self.model.optimizer.step()
 
-    def update_policy(self, batch_rewards, batch_log_probs):
+    def update_policy0(self, batch_rewards, batch_log_probs):
         policy_gradients = []
 
         for rewards in batch_rewards:
@@ -129,6 +130,32 @@ class baselineREINFORCEpolicy:
 
         self.model.optimizer.zero_grad()
         policy_gradient = torch.sum(torch.stack(policy_gradients, dim=0), dim=1)  # .sum()
+        print(policy_gradient)
+        policy_gradient.backward()
+        self.model.optimizer.step()
+
+
+    def update_policy(self, batch_rewards, batch_log_probs):
+        policy_gradients = []
+
+        for rewards, log_probs in zip(batch_rewards, batch_log_probs):
+            discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
+            discounted_rewards = torch.tensor(discounted_rewards)
+            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
+                    discounted_rewards.std() + 1e-9)  # normalize discounted rewards
+
+            for log_prob, Gt in zip(log_probs, discounted_rewards):
+                policy_gradients.append(-log_prob * Gt)
+            
+            # Calculate entropy of the action probabilities
+            probs = torch.exp(log_probs)
+            entropy = -(probs * log_probs).sum(-1).mean()
+            policy_gradients.append(self.entropy_term * entropy)
+        
+
+        self.model.optimizer.zero_grad()
+        policy_gradient = torch.stack(policy_gradients).sum()
+        print(policy_gradient)
         policy_gradient.backward()
         self.model.optimizer.step()
 

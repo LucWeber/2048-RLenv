@@ -14,11 +14,11 @@ class MLP(nn.Module):
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, num_actions)
-        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate, maximize=True)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))
-        #x = F.relu(self.linear2(x))
+        x = F.relu(self.linear2(x))
         x = F.softmax(self.linear3(x), dim=1)
         return x
 
@@ -36,7 +36,12 @@ class MLP(nn.Module):
         if np.random.random() < epsilon: # epsilon-greedy
             sampled_actions = np.random.choice(len(probs))
         else:
-            sampled_actions = Categorical(probs).sample()
+            #print((self.linear1.weight).min())
+            try:
+                sampled_actions = Categorical(probs).sample()
+            except:
+                breakpoint()
+
         #sampled_action = np.random.choice(self.num_actions, p=np.squeeze(probs.detach().numpy()))
         log_probs = t.log(probs[range(len(probs)), sampled_actions])
         #sampled_action = np.random.choice(self.num_actions, p=np.squeeze(probs.detach().numpy()))
