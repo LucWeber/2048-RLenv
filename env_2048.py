@@ -140,7 +140,7 @@ class Env_2048(gym.Env): #, Frame):
             #self.render()
         else:
             #print('Illegal action! Reward: -1')
-            score = -1
+            #score = -1
             self.n_illegal_actions += 1
 
         """
