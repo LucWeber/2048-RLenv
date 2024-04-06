@@ -79,6 +79,7 @@ class baselineREINFORCEpolicy:
         states, actions, rewards, log_probs = generate_session(env=self.env, model=self.model,
                                                                t_max=self.t_max, epsilon=self.epsilon)
 
+        #self.print_distribution_actions(actions)
         rewards = torch.tensor(rewards).unsqueeze(dim=0)
         log_probs = torch.cat(log_probs).unsqueeze(dim=0)
 
@@ -130,7 +131,7 @@ class baselineREINFORCEpolicy:
 
         self.model.optimizer.zero_grad()
         policy_gradient = torch.sum(torch.stack(policy_gradients, dim=0), dim=1)  # .sum()
-        print(policy_gradient)
+        #print(policy_gradient)
         policy_gradient.backward()
         self.model.optimizer.step()
 
@@ -150,12 +151,11 @@ class baselineREINFORCEpolicy:
             # Calculate entropy of the action probabilities
             probs = torch.exp(log_probs)
             entropy = -(probs * log_probs).sum(-1).mean()
-            policy_gradients.append(self.entropy_term * entropy)
-        
+            policy_gradients.append(self.entropy_term * entropy)  
 
         self.model.optimizer.zero_grad()
         policy_gradient = torch.stack(policy_gradients).sum()
-        print(policy_gradient)
+        #print(policy_gradient)
         policy_gradient.backward()
         self.model.optimizer.step()
 

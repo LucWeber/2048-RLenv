@@ -33,11 +33,11 @@ if __name__ == "__main__":
 
   mode = 'agent'
   visualize = True
-  total_sessions = 500 
-  t_max = 150
-  gamma = 0.99 # discount factor for reward
-  epsilon = 0.1 # for epsilon-greedy action selection
-  entropy_term = 0.05 # for entropy regularization (to encourage exploration)
+  total_sessions = 200 
+  t_max = 3000
+  gamma = 0.9 # discount factor for reward
+  epsilon = 0.0 #1 # for epsilon-greedy action selection
+  entropy_term = 0.2 # for entropy regularization (to encourage exploration)
   model_type = args.model_type if args.model_type is not None else 'MLP'
 
   # INIT ENVIRONMENT
@@ -56,6 +56,7 @@ if __name__ == "__main__":
   plt.plot(rewards_baseline, label='baseline')
   plt.legend()
 
+  plt.savefig(f'./{model_type}_rewards.pdf')
   plt.show()
 
   if visualize:

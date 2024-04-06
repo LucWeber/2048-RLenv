@@ -7,7 +7,7 @@ import torch.optim as optim
 import numpy as np
 
 class MLP(nn.Module):
-    def __init__(self, input_size, num_actions, hidden_size=32, learning_rate=3e-4):
+    def __init__(self, input_size, num_actions, hidden_size=64, learning_rate=3e-4):
         super(MLP, self).__init__()
 
         self.num_actions = num_actions
@@ -52,24 +52,24 @@ class ConvNet(nn.Module):
     def __init__(self, input_size, num_actions, learning_rate=3e-4):
         super(ConvNet, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=2, stride=1, padding=1),
-            #nn.BatchNorm2d(16),
+            nn.Conv2d(1, 32, kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             #nn.MaxPool2d(kernel_size=2, stride=2)
             )
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 16, kernel_size=2, stride=1, padding=1),
-            #nn.BatchNorm2d(16),
+            nn.Conv2d(32, 32, kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1)
         )
         self.layer3 = nn.Sequential(
-            nn.Conv2d(16, 16, kernel_size=2, stride=1, padding=1),
-            #nn.BatchNorm2d(16),
+            nn.Conv2d(32, 32, kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1)
         )
-        self.fc_lambda = nn.Linear(400, num_actions)
+        self.fc_lambda = nn.Linear(800, num_actions)
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
         self.num_actions = num_actions
 
