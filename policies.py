@@ -1,11 +1,17 @@
 import numpy as np
-import torch as t
+import torch
 import models
 import os
+from tqdm import tqdm
+from collections import Counter
 
-t.cuda.set_device(0)
-device = t.device('cuda:0' if t.cuda.is_available() else 'cpu')
-
+if torch.cuda.is_available():
+    torch.cuda.set_device(0)
+    device_name = 'cuda:0'
+else:
+    device_name = 'cpu'
+    
+device = torch.device(device_name)
 
 
 class RandomPolicy:
@@ -61,10 +67,9 @@ class baselineREINFORCEpolicy:
         """ train policy network for given amount of sessions """
         final_rewards = []
         self.training_steps = total_sessions
-        for i, session in enumerate(range(total_sessions)):
+        for i, session in enumerate(tqdm(range(total_sessions))):
             final_rewards = self.train_session(final_rewards)
             self.total_n_illegal_moves.append(self.env.n_illegal_actions)
-            print(f'FINISHED EPISODE {i}. Reward: {final_rewards[-1]}')
         self.save_model()
         return final_rewards
 
@@ -72,10 +77,8 @@ class baselineREINFORCEpolicy:
         states, actions, rewards, log_probs = generate_session(env=self.env, model=self.model,
                                                                t_max=self.t_max)
 
-        self.print_distribution_actions(actions)
-
-        rewards = t.tensor(rewards).unsqueeze(dim=0)
-        log_probs = t.cat(log_probs).unsqueeze(dim=0)
+        rewards = torch.tensor(rewards).unsqueeze(dim=0)
+        log_probs = torch.cat(log_probs).unsqueeze(dim=0)
 
         self.update_policy(rewards, log_probs)
         final_rewards.append(self.env.total_score)
@@ -83,13 +86,18 @@ class baselineREINFORCEpolicy:
         return final_rewards
 
     def print_distribution_actions(self, actions):
-        """ check distribution of actiosn for error analysis """
+        """ check distribution of actions for error analysis """
         if self.verbose:
-            from collections import Counter
             a_for_counting = [int(a) for a in actions]
             print(Counter(a_for_counting))
 
     def predict(self, state, sampling='greedy'):
+        input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
+        action = self.model.get_action(input)
+        return action[0].item()
+
+    def predict1(self, state, sampling='greedy'):
+        ''' commented out for debugging'''
         if self.model_type == 'MLP':
             input = np.asarray(state).flatten()
         else:
@@ -100,7 +108,7 @@ class baselineREINFORCEpolicy:
     def update_policy0(self, rewards, log_probs):
         discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
 
-        discounted_rewards = t.tensor(discounted_rewards)
+        discounted_rewards = torch.tensor(discounted_rewards)
         discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
                 discounted_rewards.std() + 1e-9)  # normalize discounted rewards
 
@@ -110,7 +118,7 @@ class baselineREINFORCEpolicy:
 
         self.model.optimizer.zero_grad()
 
-        policy_gradient = t.stack(policy_gradient).sum()
+        policy_gradient = torch.stack(policy_gradient).sum()
 
         policy_gradient.backward()
         self.model.optimizer.step()
@@ -120,7 +128,7 @@ class baselineREINFORCEpolicy:
 
         for rewards in batch_rewards:
             discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
-            discounted_rewards = t.tensor(discounted_rewards)
+            discounted_rewards = torch.tensor(discounted_rewards)
             discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
                     discounted_rewards.std() + 1e-9)  # normalize discounted rewards
 
@@ -128,7 +136,7 @@ class baselineREINFORCEpolicy:
                 policy_gradients.append(-log_prob * Gt)
 
         self.model.optimizer.zero_grad()
-        policy_gradient = t.sum(t.stack(policy_gradients, dim=0), dim=1)  # .sum()
+        policy_gradient = torch.sum(torch.stack(policy_gradients, dim=0), dim=1)  # .sum()
         policy_gradient.backward()
         self.model.optimizer.step()
 
@@ -141,7 +149,7 @@ class baselineREINFORCEpolicy:
 
         save_path = os.path.join(save_folder, save_file)
 
-        t.save(self.model.state_dict(), save_path)
+        torch.save(self.model.state_dict(), save_path)
         print(f'Successfully saved model to {save_path}!')
 
 
@@ -160,7 +168,7 @@ def generate_session(env, model, t_max):
         else:
         '''
         # this is for faking a batch:
-        input = t.tensor(state, dtype=t.float32).unsqueeze(dim=0)
+        input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
         input.requires_grad = True
         action, log_prob = model.get_action(input)
         log_probs.append(log_prob)
@@ -177,7 +185,7 @@ def generate_session(env, model, t_max):
         if done:
             break
 
-    print(f'number illegal actions: {env.n_illegal_actions}')
+    #print(f'number illegal actions: {env.n_illegal_actions}')
 
     return states, actions, rewards, log_probs
 
@@ -214,7 +222,7 @@ def get_cumulative_rewards2(rewards, gamma=0.99):
         elif len(cum_sums) == len(rewards_all):
             return cum_sums
         else:
-            wts = gamma ** ((len(cum_sums)) - t.arange(0, len(cum_sums)))
+            wts = gamma ** ((len(cum_sums)) - torch.arange(0, len(cum_sums)))
             itr = len(cum_sums)
             cum_sums = cum_sums + [rewards_all[itr] + sum([c * float(wts[i]) for i, c in enumerate(rewards_all[:itr])])]
             cum_sums = cum_sum(rewards_all, cum_sums)
