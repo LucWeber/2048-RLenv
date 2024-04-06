@@ -20,6 +20,9 @@ import logging
 # TODO: cleanup code!
 
 
+# NEW NOTES:
+# Looks like the log-prob coming out of of model.get_action has only one dimension 
+
 if __name__ == "__main__":
   # GET ARGS & SET HYPERPARAMS
   parser = argparse.ArgumentParser()
@@ -30,27 +33,32 @@ if __name__ == "__main__":
 
 
   mode = 'agent'
-  visualize = False
-  total_sessions = 200
-  t_max = 100
+  visualize = True
+  total_sessions = 500 # 
+  t_max = 1000
+  gamma = 0.99 # discount factor for reward
   model_type = args.model_type if args.model_type is not None else 'MLP'
 
   # INIT ENVIRONMENT
   env = Env_2048(mode=mode)
 
   # INIT POLICY
-  policy_random = RandomPolicy(env, verbose=1)
-  policy = baselineREINFORCEpolicy(env, model_type=model_type, t_max=t_max, verbose=1)
+  policy_random = RandomPolicy(env, verbose=0)
+  policy = baselineREINFORCEpolicy(env, model_type=model_type, t_max=t_max, gamma=gamma, verbose=1)
 
   # TRAIN POLICY
   rewards = policy.train(total_sessions=total_sessions)
   rewards_baseline = policy_random.run_sessions(total_sessions, t_max)
 
+
   # PLOT RESULTS
-  plt.plot(rewards, model_type)
+  plt.plot(rewards, label=model_type)
   plt.plot(rewards_baseline, label='baseline')
   plt.legend()
 
+  plt.show()
+
   if visualize:
-    grid_visualization = GridVisualization(env=env, model=policy, sleep_time=0.1)
-    grid_visualization = GridVisualization(env=env, model=policy_random, sleep_time=0.1)
+    sys.setrecursionlimit(2000)
+    grid_visualization = GridVisualization(env=env, policy=policy, sleep_time=0.1, title='trained_policy')
+    grid_visualization = GridVisualization(env=env, policy=policy_random, sleep_time=0.1, title='random_baseline')
