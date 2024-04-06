@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0, '/home/lucas/Desktop/2048-python')
 import logic
 import constants as c
 from tkinter import Frame, Label, CENTER
@@ -7,14 +6,14 @@ import numpy as np
 from time import sleep
 
 class GridVisualization(Frame):
-    def __init__(self, env, policy, sleep_time):
+    def __init__(self, env, policy, sleep_time, title='2048'):
         Frame.__init__(self)
         self.policy = policy
         self.env = env
         self.obs = env.reset()
         self.sleep_time = sleep_time
         self.grid()
-        self.master.title('2048')
+        self.master.title(title)
         self.master.bind("<Key>", self.key_down)
 
         self.history_matrices = []
@@ -62,14 +61,14 @@ class GridVisualization(Frame):
         self.update_idletasks()
 
     def key_down(self, event):
-        action, _ = self.policy.predict(np.asarray(self.obs).flatten())
+        action = self.policy.predict(np.asarray(self.obs).flatten())
         obs, rewards, done, info = self.env.step(action)
         self.update_grid_cells(self.env.matrix)
         #self.env.render(mode=mode, grid_visualization=self)
         if done:
             self.grid_cells[1][1].configure(text="Lost", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
             self.grid_cells[1][2].configure(text=f"{self.env.total_score}", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-            print(self.env.total_score)
+            print(f'Total reward: {self.env.total_score}')
             sleep(3)
             self.destroy()
         else:
