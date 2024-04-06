@@ -25,7 +25,7 @@ class MLP(nn.Module):
     def get_probs(self, state):
         return self.forward(state)
 
-    def get_action(self, state):
+    def get_action(self, state, epsilon=0.0):
         if type(state) == np.ndarray:
             state = t.from_numpy(state).float()
         try:
@@ -33,8 +33,10 @@ class MLP(nn.Module):
         except:
             pass
         probs = self.forward(state)
-        # TODO: give choice of greedy action; use torch for sampling
-        sampled_actions = Categorical(probs).sample()
+        if np.random.random() < epsilon: # epsilon-greedy
+            sampled_actions = np.random.choice(len(probs))
+        else:
+            sampled_actions = Categorical(probs).sample()
         #sampled_action = np.random.choice(self.num_actions, p=np.squeeze(probs.detach().numpy()))
         log_probs = t.log(probs[range(len(probs)), sampled_actions])
         #sampled_action = np.random.choice(self.num_actions, p=np.squeeze(probs.detach().numpy()))
@@ -78,11 +80,14 @@ class ConvNet(nn.Module):
     def get_probs(self, state):
         return self.forward(state)
 
-    def get_action(self, state):
+    def get_action(self, state, epsilon=0.0):
         state = state.unsqueeze(dim=1)  # add channel; & needs to be float for Conv2D -> is this bad?
         probs = self.forward(state)
-        # TODO: give choice of greedy action; use torch for sampling
-        sampled_actions = Categorical(probs).sample()
+
+        if np.random.random() < epsilon: # epsilon-greedy
+            sampled_actions = np.random.choice(len(probs))
+        else:
+            sampled_actions = Categorical(probs).sample()
         #sampled_action = np.random.choice(self.num_actions, p=np.squeeze(probs.detach().numpy()))
         log_probs = t.log(probs[range(len(probs)), sampled_actions])
         return sampled_actions, log_probs
@@ -108,7 +113,9 @@ class Transformer(nn.Module):
     def get_action(self, state):
         state = state.unsqueeze(0)  # TODO:remove this for batch-processing
         probs = self.forward(Variable(state))
-        # TODO: give choice of greedy action; use torch for sampling
-        sampled_action = Categorical(probs.detach())
+        if np.random.random() < epsilon: # epsilon-greedy
+            sampled_actions = np.random.choice(len(probs))
+        else:
+            sampled_action = Categorical(probs.detach())
         log_prob = t.log(probs.squeeze(0)[sampled_action])
         return sampled_action, log_prob

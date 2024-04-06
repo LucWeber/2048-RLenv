@@ -45,7 +45,7 @@ class baselineREINFORCEpolicy:
     adapt such that you cannot see where it is from
     """
 
-    def __init__(self, env, model_type='MLP', t_max=1000, verbose=0):
+    def __init__(self, env, model_type='MLP', t_max=1000, verbose=0, gamma=0.99, epsilon=0.0):
         self.env = env
         self.lr = 1e-3
         # TODO: generalize this to other dimensionality:
@@ -59,7 +59,8 @@ class baselineREINFORCEpolicy:
         self.model_type = model_type
         self.verbose = verbose
         self.t_max = t_max
-        self.gamma = 0.8
+        self.epsilon = epsilon # for epsilon-greedy action selection
+        self.gamma = gamma
         self.training_steps = 0
         self.total_n_illegal_moves = []
 
@@ -75,7 +76,7 @@ class baselineREINFORCEpolicy:
 
     def train_session(self, final_rewards):
         states, actions, rewards, log_probs = generate_session(env=self.env, model=self.model,
-                                                               t_max=self.t_max)
+                                                               t_max=self.t_max, epsilon=self.epsilon)
 
         rewards = torch.tensor(rewards).unsqueeze(dim=0)
         log_probs = torch.cat(log_probs).unsqueeze(dim=0)
@@ -95,15 +96,6 @@ class baselineREINFORCEpolicy:
         input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
         action = self.model.get_action(input)
         return action[0].item()
-
-    def predict1(self, state, sampling='greedy'):
-        ''' commented out for debugging'''
-        if self.model_type == 'MLP':
-            input = np.asarray(state).flatten()
-        else:
-            input = np.expand_dims(np.asarray(state), axis=0)
-        action, _ = self.model.get_action(input)
-        return action
 
     def update_policy0(self, rewards, log_probs):
         discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
@@ -153,7 +145,7 @@ class baselineREINFORCEpolicy:
         print(f'Successfully saved model to {save_path}!')
 
 
-def generate_session(env, model, t_max):
+def generate_session(env, model, t_max, epsilon=0.0):
     """
     Returns sequences of states, actions, and rewards.
     """
@@ -170,7 +162,7 @@ def generate_session(env, model, t_max):
         # this is for faking a batch:
         input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
         input.requires_grad = True
-        action, log_prob = model.get_action(input)
+        action, log_prob = model.get_action(input, epsilon=epsilon)
         log_probs.append(log_prob)
 
         # Sample action with given probabilities.
@@ -185,16 +177,14 @@ def generate_session(env, model, t_max):
         if done:
             break
 
-    #print(f'number illegal actions: {env.n_illegal_actions}')
-
     return states, actions, rewards, log_probs
 
 
 def get_cumulative_rewards(rewards, gamma=0.99):
     """
-  rewards: rewards at each step
-  gamma: discount for reward
-  """
+    rewards: rewards at each step
+    gamma: discount for reward
+    """
     discounted_rewards = []
 
     for rew in range(len(rewards)):
