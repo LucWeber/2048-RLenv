@@ -26,7 +26,12 @@ class MLP(nn.Module):
         return self.forward(state)
 
     def get_action(self, state):
-        state = state.flatten().unsqueeze(0)  # TODO:remove this for batch-processing
+        if type(state) == np.ndarray:
+            state = t.from_numpy(state).float()
+        try:
+            state = state.flatten().unsqueeze(0)  # TODO:remove this for batch-processing
+        except:
+            pass
         probs = self.forward(state)
         # TODO: give choice of greedy action; use torch for sampling
         sampled_actions = Categorical(probs).sample()
