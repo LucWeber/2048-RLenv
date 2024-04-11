@@ -1,9 +1,11 @@
 import numpy as np
 import torch
-import models
 import os
 from tqdm import tqdm
 from collections import Counter
+import pickle as pkl
+
+from models import get_model
 
 if torch.cuda.is_available():
     torch.cuda.set_device(0)
@@ -45,18 +47,17 @@ class baselineREINFORCEpolicy:
     adapt such that you cannot see where it is from
     """
 
-    def __init__(self, env, model_type='MLP', t_max=1000, verbose=0, gamma=0.99, epsilon=0.0, entropy_term=0.1):
-        self.env = env
-        self.lr = 1e-4
-        # TODO: generalize this to other dimensionality:
+    def __init__(self, env, model_name='MLP', t_max=1000, verbose=0, gamma=0.99, epsilon=0.0, entropy_term=0.1, lr=1e-4, save_name='model', **kwargs):
+        
         input_size = env.observation_space.shape[0] * env.observation_space.shape[1]
-        self.model = getattr(models, model_type)(input_size=input_size,
-                                                 num_actions=env.action_space.n,
-                                                 learning_rate=self.lr)
 
+        self.env = env
+        self.lr = lr
+        self.save_name = save_name
+        
+        self.model, self.model_type = get_model(model_name=model_name, input_size=input_size, num_actions=env.action_space.n,lr=lr, device=device)
         self.model = self.model.to(device)
 
-        self.model_type = model_type
         self.verbose = verbose
         self.t_max = t_max
         self.epsilon = epsilon # for epsilon-greedy action selection
@@ -69,17 +70,27 @@ class baselineREINFORCEpolicy:
         """ train policy network for given amount of sessions """
         final_rewards = []
         self.training_steps = total_sessions
-        for i, session in enumerate(tqdm(range(total_sessions))):
+        
+        pbar = tqdm(range(total_sessions), desc="Train policy")
+        for i, session in enumerate(pbar):
             final_rewards = self.train_session(final_rewards)
             self.total_n_illegal_moves.append(self.env.n_illegal_actions)
+            pbar.set_postfix(reward=f'{final_rewards[-1]}', refresh=False)
         self.save_model()
         return final_rewards
 
-    def train_session(self, final_rewards):
+    def train_session(self, final_rewards, save_high_reward_sessions=True):
         states, actions, rewards, log_probs = generate_session(env=self.env, model=self.model,
                                                                t_max=self.t_max, epsilon=self.epsilon)
 
-        #self.print_distribution_actions(actions)
+        if save_high_reward_sessions:
+            if self.env.total_score > 7000:
+                save_folder = f'./pretrain_data'
+                os.makedirs(save_folder, exist_ok=True)
+                save_file = f'state_action_pairs_high_reward_{self.env.total_score}_{self.save_name}.pt'
+                torch.save((torch.tensor(states), torch.stack(actions), torch.tensor(rewards)), open(os.path.join(save_folder, save_file), 'wb'))
+                print(f'Saved state-action pairs!')
+
         rewards = torch.tensor(rewards).unsqueeze(dim=0)
         log_probs = torch.cat(log_probs).unsqueeze(dim=0)
 
@@ -88,6 +99,22 @@ class baselineREINFORCEpolicy:
 
         return final_rewards
 
+    def run_sessions(self, n_sessions, t_max, save_high_reward_sessions=True):
+        with torch.no_grad():
+            pbar = tqdm(range(n_sessions), desc="Extracting state-action pairs")
+            for i, session in enumerate(pbar):
+                states, actions, rewards, _ = generate_session(env=self.env, model=self.model,
+                                                                    t_max=t_max, epsilon=self.epsilon)
+
+                if save_high_reward_sessions:
+                    if self.env.total_score > 7000:
+                        save_folder = f'./pretrain_data'
+                        os.makedirs(save_folder, exist_ok=True)
+                        save_file = f'state_action_pairs_high_reward_{self.env.total_score}_{self.save_name}.pt'
+                        torch.save((torch.tensor(states), torch.stack(actions), torch.tensor(rewards)), open(os.path.join(save_folder, save_file), 'wb'))
+                        print(f'Saved state-action pairs!')
+                pbar.set_postfix(reward=f'{self.env.total_score}', refresh=False)
+
     def print_distribution_actions(self, actions):
         """ check distribution of actions for error analysis """
         if self.verbose:
@@ -95,45 +122,9 @@ class baselineREINFORCEpolicy:
             print(Counter(a_for_counting))
 
     def predict(self, state, sampling='greedy'):
-        input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
-        action = self.model.get_action(input)
+        inputs = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0).to(device)
+        action = self.model.get_action(inputs)
         return action[0].item()
-
-    def update_policy0(self, rewards, log_probs):
-        discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
-
-        discounted_rewards = torch.tensor(discounted_rewards)
-        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
-                discounted_rewards.std() + 1e-9)  # normalize discounted rewards
-
-        policy_gradient = []
-        for log_prob, Gt in zip(log_probs, discounted_rewards):
-            policy_gradient.append(-log_prob * Gt)
-
-        self.model.optimizer.zero_grad()
-
-        policy_gradient = torch.stack(policy_gradient).sum()
-
-        policy_gradient.backward()
-        self.model.optimizer.step()
-
-    def update_policy0(self, batch_rewards, batch_log_probs):
-        policy_gradients = []
-
-        for rewards in batch_rewards:
-            discounted_rewards = get_cumulative_rewards(rewards, self.gamma)
-            discounted_rewards = torch.tensor(discounted_rewards)
-            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
-                    discounted_rewards.std() + 1e-9)  # normalize discounted rewards
-
-            for log_prob, Gt in zip(batch_log_probs, discounted_rewards):
-                policy_gradients.append(-log_prob * Gt)
-
-        self.model.optimizer.zero_grad()
-        policy_gradient = torch.sum(torch.stack(policy_gradients, dim=0), dim=1)  # .sum()
-        #print(policy_gradient)
-        policy_gradient.backward()
-        self.model.optimizer.step()
 
 
     def update_policy(self, batch_rewards, batch_log_probs):
@@ -151,25 +142,32 @@ class baselineREINFORCEpolicy:
             # Calculate entropy of the action probabilities
             probs = torch.exp(log_probs)
             entropy = -(probs * log_probs).sum(-1).mean()
-            policy_gradients.append(self.entropy_term * entropy)  
+            regularization_term = -(self.entropy_term * entropy)
 
         self.model.optimizer.zero_grad()
-        policy_gradient = torch.stack(policy_gradients).sum()
-        #print(policy_gradient)
+
+        policy_gradient = torch.stack(policy_gradients).sum() + regularization_term
+
         policy_gradient.backward()
+
         self.model.optimizer.step()
+
 
     def save_model(self):
         save_folder = f'./saved_models'
         os.makedirs(save_folder, exist_ok=True)
 
-        save_file = f'REINFORCE_{self.model_type}_gamma_{self.gamma}_lr_{self.lr}_steps_' \
-                    f'{self.training_steps}_tmax_{self.t_max}.ckpt'
-
+        save_file = f'REINFORCE_{self.save_name}.ckpt'
         save_path = os.path.join(save_folder, save_file)
 
         torch.save(self.model.state_dict(), save_path)
         print(f'Successfully saved model to {save_path}!')
+        
+        save_file = f'REINFORCE_{self.save_name}_optimizer.ckpt'
+        save_path = os.path.join(save_folder, save_file)
+        torch.save(self.model.optimizer.state_dict(), save_path)
+        
+        print(f'Successfully saved optimizer to {save_path}!')
 
 
 def generate_session(env, model, t_max, epsilon=0.0):
@@ -181,15 +179,11 @@ def generate_session(env, model, t_max, epsilon=0.0):
     state = env.reset()
 
     for _ in range(t_max):
-        '''
-        if self.model_type == 'MLP':
-            input = np.asarray(state).flatten()
-        else:
-        '''
+
         # this is for faking a batch:
-        input = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0)
-        input.requires_grad = True
-        action, log_prob = model.get_action(input, epsilon=epsilon)
+        inputs = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0).to(device)
+        inputs.requires_grad = True
+        action, log_prob = model.get_action(inputs, epsilon=epsilon)
         log_probs.append(log_prob)
 
         # Sample action with given probabilities.
