@@ -54,7 +54,7 @@ class Env_2048(gym.Env): #, Frame):
         2     Move all tiles left
         3     Move all tiles right
     Reward:
-        Score produced by merging tiles. Score is equal to sum of values of all merged tiles.
+        Score produced by merging tiles. Score is equal to sum of values of all merged tiles. Negative reward on loosing the game
     Starting State:
         Two value 2 tiles in random position.
     Episode Termination:
@@ -92,6 +92,8 @@ class Env_2048(gym.Env): #, Frame):
         score, done = self._take_action(action)
         self.total_score += score
         reward = self.reward_func(score)
+        if done:
+            reward -= 100
 
         return self.matrix, reward, done, {}
 
