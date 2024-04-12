@@ -16,8 +16,8 @@ pip install -r requirements.txt
 Train a REINFORCE policy with default hyperparameters using a 4-layer Transformer as policy network, run:
 ```bash
 python RLenv_2048/scripts/main.py --train \
-                --exp my_first_run \
-                --model_name Transformer4L
+                                  --exp my_first_run \
+                                  --model_name Transformer4L
 ```
 Here, `--train` indicates that we want to train a policy (alternatively, you can `--visualize` or simply `--run_inference` on a given policy).
 
