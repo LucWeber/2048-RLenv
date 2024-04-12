@@ -19,6 +19,7 @@ def parse_args():
   parser.add_argument('--visualize', help='visualize the policy', action='store_true')
   parser.add_argument('--run_inferences', help='run inferences for the policy (generate pretraining data).',  action='store_true')
   parser.add_argument('--total_sessions', help='number of sessions to run.', type=int,  default=default_config['total_sessions'])
+  parser.add_argument('--exp', help='Any string identifying an experiment', type=str,  default=default_config['exp'])
 
   args = parser.parse_args()
   args_dict = vars(parser.parse_args())
