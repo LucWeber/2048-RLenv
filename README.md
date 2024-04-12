@@ -7,13 +7,16 @@ This is a [OpenAI-gym](https://github.com/openai/gym)-styled RL-environment for 
 </p>
 The repository contains the game environment, the possibility to train policies for the environment (with REINFORCE and a few policy networks preimplmented) and the possibility to visualize a given policy.
 
-To set things up, run:
+
+### Setup
+___________
+Set things up by running:
 ```bash
 conda create -n 2048-RL python=3.10
 conda activate 2048-RL
 pip install -r requirements.txt
 ```
-Train a REINFORCE policy with default hyperparameters using a 4-layer Transformer as policy network, run:
+Train a REINFORCE policy with default hyperparameters using a 4-layer Transformer as policy network by running:
 ```bash
 python RLenv_2048/scripts/main.py --train \
                                   --exp my_first_run \
