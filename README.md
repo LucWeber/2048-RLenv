@@ -5,9 +5,6 @@ This is a [OpenAI-gym](https://github.com/openai/gym)-styled RL-environment for 
 <p align="center">
   <img src="https://github.com/LucWeber/2048-RLenv/blob/master/game_animation_small.gif" />
 </p>
-
-![](https://github.com/LucWeber/2048-RLenv/blob/master/game_animation_small.gif)
-
 The repository contains the game environment, the possibility to train policies for the environment (with REINFORCE and a few policy networks preimplmented) and the possibility to visualize a given policy.
 
 To set things up, run:
