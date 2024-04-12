@@ -55,6 +55,7 @@ def train_policy(config, policy, policy_baseline=None, **kwargs):
   # SAVE REWARDS
   plt.savefig(f'./plots/rewards_{config.save_name}.png')
   rewards_df = pd.DataFrame.from_dict({'trained': rewards, 'baseline': rewards_baseline})
+  os.makedirs("./results", exist_ok=True)
   rewards_df.to_csv(f'./results/rewards_{config.save_name}.csv')
 
   print(f'Baseline mean reward: {sum(rewards_baseline) / len(rewards_baseline)}')
