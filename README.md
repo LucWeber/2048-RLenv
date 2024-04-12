@@ -2,8 +2,11 @@
 ===========
 
 This is a [OpenAI-gym](https://github.com/openai/gym)-styled RL-environment for the game [2048](https://github.com/gabrielecirulli/2048) by Gabriele Cirulli. The game-logic and visualization is adapted from [Yangshun's python implementation](https://github.com/yangshun/2048-python) of the game.
+<p align="center">
+  <img src="https://github.com/LucWeber/2048-RLenv/blob/master/game_animation_small.gif" />
+</p>
 
-![](https://github.com/LucWeber/2048-RLenv/blob/master/gameplay_animation.gif)
+![](https://github.com/LucWeber/2048-RLenv/blob/master/game_animation_small.gif)
 
 The repository contains the game environment, the possibility to train policies for the environment (with REINFORCE and a few policy networks preimplmented) and the possibility to visualize a given policy.
 
