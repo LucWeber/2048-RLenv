@@ -83,7 +83,7 @@ class GridVisualization(Frame):
             sleep(self.sleep_time)
             self.event_generate("<Key>")
 
-    def display_end_game(self, score):
+    def display_end_game(self):
         for i in range(c.GRID_LEN):
             for j in range(c.GRID_LEN):
                 self.grid_cells[i][j].configure(text="")
