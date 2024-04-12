@@ -68,18 +68,19 @@ class baselineREINFORCEpolicy:
 
     def train(self, total_sessions=1):
         """ train policy network for given amount of sessions """
-        final_rewards = []
+        final_scores = []
         self.training_steps = total_sessions
+        current_best_score = 1000 # we want to save models that perform better than this across recent sessions
         
         pbar = tqdm(range(total_sessions), desc="Train policy")
         for i, session in enumerate(pbar):
-            final_rewards = self.train_session(final_rewards)
+            final_scores, current_best_score = self.train_session(final_scores, current_best_score)
             self.total_n_illegal_moves.append(self.env.n_illegal_actions)
-            pbar.set_postfix(reward=f'{final_rewards[-1]}', refresh=False)
+            pbar.set_postfix(Score=f'{final_scores[-1]}', refresh=False)
         self.save_model()
-        return final_rewards
+        return final_scores
 
-    def train_session(self, final_rewards, save_high_reward_sessions=True):
+    def train_session(self, final_scores, current_best_score, save_high_reward_sessions=True):
         states, actions, rewards, log_probs = generate_session(env=self.env, model=self.model,
                                                                t_max=self.t_max, epsilon=self.epsilon)
 
@@ -95,9 +96,16 @@ class baselineREINFORCEpolicy:
         log_probs = torch.cat(log_probs).unsqueeze(dim=0)
 
         self.update_policy(rewards, log_probs)
-        final_rewards.append(self.env.total_score)
+        final_scores.append(self.env.total_score)
 
-        return final_rewards
+        # check most recent 4 scores, compare it with the best score and save model if it is better
+        current_score = torch.mean(torch.tensor(final_scores if len(final_scores) < 4 else final_scores[-4:] , dtype=float))
+        if current_score > current_best_score:
+            print(f'New best score: {current_score:.2f}. Saving model.')
+            self.save_model(best=True, verbose=False)
+            current_best_score = current_score
+
+        return final_scores, current_best_score
 
     def run_sessions(self, n_sessions, t_max, save_high_reward_sessions=True):
         with torch.no_grad():
@@ -153,21 +161,22 @@ class baselineREINFORCEpolicy:
         self.model.optimizer.step()
 
 
-    def save_model(self):
+    def save_model(self, best=False, verbose=True):
         save_folder = f'./saved_models'
         os.makedirs(save_folder, exist_ok=True)
 
-        save_file = f'REINFORCE_{self.save_name}.ckpt'
+        save_file = f'REINFORCE_{self.save_name}{"_best" if best else ""}.ckpt'
         save_path = os.path.join(save_folder, save_file)
 
         torch.save(self.model.state_dict(), save_path)
-        print(f'Successfully saved model to {save_path}!')
+        if verbose:
+            print(f'Successfully saved model to {save_path}!')
         
-        save_file = f'REINFORCE_{self.save_name}_optimizer.ckpt'
+        save_file = f'REINFORCE_{self.save_name}{"_best" if best else ""}_optimizer.ckpt'
         save_path = os.path.join(save_folder, save_file)
         torch.save(self.model.optimizer.state_dict(), save_path)
-        
-        print(f'Successfully saved optimizer to {save_path}!')
+        if verbose:
+            print(f'Successfully saved optimizer to {save_path}!')
 
 
 def generate_session(env, model, t_max, epsilon=0.0):
