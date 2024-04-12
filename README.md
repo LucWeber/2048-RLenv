@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ```
 Train a REINFORCE policy with default hyperparameters using a 4-layer Transformer as policy network, run:
 ```bash
-python main.py --train \
+python RLenv_2048/scripts/main.py --train \
                 --exp my_first_run \
                 --model_name Transformer4L
 ```
