@@ -22,7 +22,14 @@ python RLenv_2048/scripts/main.py --train \
                                   --exp my_first_run \
                                   --model_name Transformer4L
 ```
-Here, `--train` indicates that we want to train a policy (alternatively, you can `--visualize` or simply `--run_inference` on a given policy).
+
+Here, the arg `model_name` specifies the policy network to use. If you train from scratch, use one of the pre-implemented model-classes from `RLenv_2048/models` or implement your own in the same file (don't forget to add it to the `MODEL_REGISTER` on the bottom!). Otherwise, you can also use a pre-trained network. To do so, use the file-name of the saved model as `model_name`, like so:
+
+```bash
+python RLenv_2048/scripts/main.py --visualize \
+                                  --model_name REINFORCE_Transformer4L_sess_2000_tmax_10000_gamma_0.99_epsilon_0.0_entropy_0.1_lr_0.0001_greedy
+```
+Note that I replaced the `--train` flag with `--visualize`. We can train but also visualize or simply `--run_inference` on a given policy that we are interested in.
 
 ### Best scores
 ___________
