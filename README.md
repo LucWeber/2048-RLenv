@@ -23,7 +23,7 @@ python RLenv_2048/scripts/main.py --train \
                                   --model_name Transformer4L
 ```
 
-Here, the arg `model_name` specifies the policy network to use. If you train from scratch, use one of the pre-implemented model-classes from `RLenv_2048/models` or implement your own in the same file (don't forget to add it to the `MODEL_REGISTER` on the bottom!). Otherwise, you can also use a pre-trained network. To do so, use the file-name of the saved model as `model_name`, like so:
+Here, the arg `--model_name` specifies the policy network to use. If you train from scratch, use one of the pre-implemented model-classes from `RLenv_2048/models` or implement your own in the same file (don't forget to add it to the `MODEL_REGISTER` on the bottom!). Otherwise, you can also use a pre-trained network. To do so, use the file-name of the saved model as `--model_name`, like so:
 
 ```bash
 python RLenv_2048/scripts/main.py --visualize \
