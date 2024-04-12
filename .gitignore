@@ -1,6 +1,6 @@
-saved_models/*
-
-submit_2048.sh
-
+RLenv_2048/saved_models/*
+RLenv_2048/plots/*
+RLenv_2048/pretrain_data/*
+RLenv_2048/screenshots/*
 logs/*
 
