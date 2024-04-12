@@ -1,9 +1,8 @@
-import sys
-import logic
 import constants as c
 from tkinter import Frame, Label, CENTER
 import numpy as np
 from time import sleep
+from PIL import ImageGrab
 
 class GridVisualization(Frame):
     def __init__(self, env, policy, sleep_time, title='2048'):
@@ -15,6 +14,8 @@ class GridVisualization(Frame):
         self.grid()
         self.master.title(title)
         self.master.bind("<Key>", self.key_down)
+        self.iteration = 0
+        self.record_screen = True
 
         self.history_matrices = []
 
@@ -59,18 +60,32 @@ class GridVisualization(Frame):
                     self.grid_cells[i][j].configure(text=str(new_number), bg=c.BACKGROUND_COLOR_DICT[new_number],
                                                     fg=c.CELL_COLOR_DICT[new_number])
         self.update_idletasks()
+        if self.record_screen:
+            self.capture_screen()
+
+    def capture_screen(self):
+        x0 = self.winfo_rootx()
+        y0 = self.winfo_rooty()
+        x1 = x0 + self.winfo_width()
+        y1 = y0 + self.winfo_height()
+        ImageGrab.grab().crop((x0, y0, x1, y1)).save(f"./screenshots/game_state_{self.iteration}.png")
+        self.iteration += 1
 
     def key_down(self, event):
         action = self.policy.predict(np.asarray(self.obs).flatten())
         obs, rewards, done, info = self.env.step(action)
         self.update_grid_cells(self.env.matrix)
-        #self.env.render(mode=mode, grid_visualization=self)
         if done:
-            self.grid_cells[1][1].configure(text="Lost", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-            self.grid_cells[1][2].configure(text=f"{self.env.total_score}", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-            print(f'Total reward: {self.env.total_score}')
+            self.display_end_game()
             sleep(3)
             self.destroy()
         else:
             sleep(self.sleep_time)
             self.event_generate("<Key>")
+
+    def display_end_game(self, score):
+        for i in range(c.GRID_LEN):
+            for j in range(c.GRID_LEN):
+                self.grid_cells[i][j].configure(text="")
+        self.grid_cells[1][1].configure(text="Game Over", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
+        self.grid_cells[1][2].configure(text=f"Score: {self.env.total_score}", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
