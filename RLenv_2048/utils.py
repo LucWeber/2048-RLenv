@@ -1,3 +1,4 @@
+import os
 import argparse
 from types import SimpleNamespace
 import pandas as pd
@@ -20,6 +21,8 @@ def parse_args():
   parser.add_argument('--run_inferences', help='run inferences for the policy (generate pretraining data).',  action='store_true')
   parser.add_argument('--total_sessions', help='number of sessions to run.', type=int,  default=default_config['total_sessions'])
   parser.add_argument('--exp', help='Any string identifying an experiment', type=str,  default=default_config['exp'])
+  parser.add_argument('--sampling', help='Whether to sample soft or greedy', choices=['soft', 'greedy'], type=str,  default=default_config['sampling'])
+  parser.add_argument('--t_max', help='Maximum actions in a session', type=int,  default=default_config['t_max'])
 
   args = parser.parse_args()
   args_dict = vars(parser.parse_args())
@@ -31,7 +34,7 @@ def parse_args():
 def merge_configs(defaults, overrides):
     config = defaults.copy()  # Start with the defaults
     config.update((k, v) for k, v in overrides.items() if v is not None)
-    config['save_name'] = f'{overrides["model_type"]}_sess_{config["total_sessions"]}_tmax_{config["t_max"]}_gamma_{config["gamma"]}_epsilon_{config["epsilon"]}_entropy_{config["entropy_term"]}_lr_{config["lr"]}_{config["exp"]}'
+    config['save_name'] = f'{overrides["model_type"]}_sess_{config["total_sessions"]}_tmax_{config["t_max"]}_gamma_{config["gamma"]}_epsilon_{config["epsilon"]}_entropy_{config["entropy_term"]}_lr_{config["lr"]}_{config["sampling"]}_{config["exp"]}'
     return config
 
 def get_config():
@@ -53,10 +56,10 @@ def train_policy(config, policy, policy_baseline=None, **kwargs):
   plt.legend()
   
   # SAVE REWARDS
-  plt.savefig(f'./plots/rewards_{config.save_name}.png')
+  plt.savefig(f'./RLenv_2048/plots/rewards_{config.save_name}.png')
   rewards_df = pd.DataFrame.from_dict({'trained': rewards, 'baseline': rewards_baseline})
-  os.makedirs("./results", exist_ok=True)
-  rewards_df.to_csv(f'./results/rewards_{config.save_name}.csv')
+  os.makedirs("./RLenv_2048/results", exist_ok=True)
+  rewards_df.to_csv(f'./RLenv_2048/results/rewards_{config.save_name}.csv')
 
   print(f'Baseline mean reward: {sum(rewards_baseline) / len(rewards_baseline)}')
   print(f'Trained mean reward: {sum(rewards) / len(rewards)}')
