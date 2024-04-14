@@ -124,7 +124,7 @@ class baselineREINFORCEpolicy:
 
     def predict(self, state, sampling='greedy'):
         inputs = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0).to(device)
-        action = self.model.get_action(inputs)
+        action = self.model.get_action(inputs, self.env.get_legal_actions())
         return action[0].item()
 
 
