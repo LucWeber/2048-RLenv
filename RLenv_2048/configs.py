@@ -7,8 +7,9 @@ default_config = {
   'lr': 1e-4,
   't_max': 10_000,
   'total_sessions': 2_000,
-  'exp': 'greedy',
+  'exp': 'None',
   'train': False,
   'visualize': False,
   'run_inferences': False,
+  'sampling': 'soft'
 }
