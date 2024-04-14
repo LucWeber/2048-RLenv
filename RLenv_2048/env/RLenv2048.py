@@ -136,7 +136,9 @@ class RLenv2048(gym.Env): #, Frame):
             #self.render()
         else:
             #print('Illegal action! Reward: -1')
-            #score = -1
+            #print('Score:', score)
+            #score = -20
+            #self.history_matrices.append(self.matrix)
             self.n_illegal_actions += 1
 
         """
@@ -153,3 +155,9 @@ class RLenv2048(gym.Env): #, Frame):
 
     def _get_game_state(self):
         return logic.game_state(self.matrix)
+    
+    def get_legal_actions(self):
+        legal_actions_map = []
+        for action, action_logic in self.action_logic_map.items():
+            legal_actions_map.append(action_logic(self.matrix)[1])
+        return legal_actions_map
