@@ -34,7 +34,7 @@ Note that I replaced the `--train` flag with `--visualize`. We can train but als
 ### Best scores
 ___________
 
-The currently highest performing model score **16,920 points**. It is a `Transformer12L` with $\gamma$ = 0.95, $\epsilon$ = 0.0, entropy-term = 0.0, lr = 1e-4 and soft sampling.
+The currently highest performing model scored **16,920 points**. It is a `Transformer12L` with $\gamma$ = 0.95, $\epsilon$ = 0.0, entropy-term = 0.0, lr = 1e-4 and soft sampling.
 
 ### This repository is still WORK IN PROGRESS 🔧 
 ___________
