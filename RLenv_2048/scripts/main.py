@@ -25,7 +25,9 @@ if __name__ == "__main__":
 
   # INIT POLICY
   policy_baseline = RandomPolicy(env, verbose=0)
-  policy = baselineREINFORCEpolicy(env, **vars(config)) 
+  policy = 'state_action_pairs_high_reward_1820_openai_gpt4_sess_1_tmax_20000_gamma_0.95_epsilon_0.15_entropy_0.0_lr_0.0001_soft_test_OAI_interface.pt'
+  #'state_action_pairs_high_reward_16920_Transformer12L_sess_3000_tmax_15000_gamma_0.95_epsilon_0.0_entropy_0.0_lr_0.0001_soft_grid_search.pt' #
+  #policy = baselineREINFORCEpolicy(env, **vars(config)) 
 
   if config.train:
     results = train_policy(config, policy, policy_baseline)
@@ -33,7 +35,7 @@ if __name__ == "__main__":
   if config.visualize:
     # VISUALIZE POLICY
     sys.setrecursionlimit(2000)
-    grid_visualization = GridVisualization(env=env, policy=policy, sleep_time=0.01, title='trained_policy')
+    grid_visualization = GridVisualization(env=env, policy=policy, sleep_time=0.005, title='trained_policy')
     #grid_visualization = GridVisualization(env=env, policy=policy_baseline, sleep_time=0.1, title='random_baseline')
   if config.run_inferences:
     # RUN SESSIONS
