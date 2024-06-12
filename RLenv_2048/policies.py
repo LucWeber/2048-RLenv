@@ -48,8 +48,9 @@ class baselineREINFORCEpolicy:
         self.lr = lr
         self.save_name = save_name
         
-        self.model, self.model_type = get_model(model_name=model_name, input_size=input_size, num_actions=env.action_space.n,lr=lr, sampling=sampling, device=device)
-        self.model = self.model.to(device)
+        self.model, self.model_type = get_model(model_name=model_name, input_size=input_size, 
+                                                num_actions=env.action_space.n,lr=lr, 
+                                                sampling=sampling, device=device)
 
         self.verbose = verbose
         self.t_max = t_max
@@ -63,7 +64,7 @@ class baselineREINFORCEpolicy:
         """ train policy network for given amount of sessions """
         final_scores = []
         self.training_steps = total_sessions
-        current_best_score = 3000 # we want to save models that perform better than this across recent sessions
+        current_best_score = 5000 # we want to save models that perform better than this across recent sessions
         
         pbar = tqdm(range(total_sessions), desc="Train policy")
         for i, session in enumerate(pbar):
@@ -78,12 +79,12 @@ class baselineREINFORCEpolicy:
                                                                t_max=self.t_max, epsilon=self.epsilon)
 
         if save_high_reward_sessions:
-            if self.env.total_score > 8000:
+            if self.env.total_score > 10_000:
                 save_folder = f'./RLenv_2048/pretrain_data'
                 os.makedirs(save_folder, exist_ok=True)
                 save_file = f'state_action_pairs_high_reward_{self.env.total_score}_{self.save_name}.pt'
                 torch.save((torch.tensor(states).cpu(), torch.stack(actions).cpu(), torch.tensor(rewards).cpu()), open(os.path.join(save_folder, save_file), 'wb'))
-                print(f'Saved state-action pairs!')
+                #print(f'Saved state-action pairs!')
 
         rewards = torch.tensor(rewards).unsqueeze(dim=0)
         log_probs = torch.cat(log_probs).unsqueeze(dim=0)
@@ -108,12 +109,11 @@ class baselineREINFORCEpolicy:
                                                                     t_max=t_max, epsilon=self.epsilon)
                 self.print_distribution_actions(actions)
                 if save_high_reward_sessions:
-                    if self.env.total_score > 8000:
+                    if self.env.total_score > 10_000 or 'gpt' in self.model_type or 'mistral' in self.model_type or 'Llama' in self.model_type:
                         save_folder = f'./RLenv_2048/pretrain_data'
                         os.makedirs(save_folder, exist_ok=True)
                         save_file = f'state_action_pairs_high_reward_{self.env.total_score}_{self.save_name}.pt'
                         torch.save((torch.tensor(states).cpu(), torch.stack(actions).cpu(), torch.tensor(rewards).cpu()), open(os.path.join(save_folder, save_file), 'wb'))
-                        print(f'Saved state-action pairs!')
                 pbar.set_postfix(reward=f'{self.env.total_score}', refresh=False)
 
     def print_distribution_actions(self, actions):
@@ -150,7 +150,7 @@ class baselineREINFORCEpolicy:
 
         self.model.optimizer.zero_grad()
 
-        policy_gradient = (1 - self.entropy_term) * torch.stack(policy_gradients).sum() - (self.entropy_term * entropy)
+        policy_gradient = torch.stack(policy_gradients).sum() + (self.entropy_term * entropy)
         policy_gradient.backward()
         self.model.optimizer.step()
 
@@ -181,7 +181,7 @@ def generate_session(env, model, t_max, epsilon=0.0):
     states, actions, rewards, log_probs = [], [], [], []
     state = env.reset()
 
-    for _ in range(t_max):
+    for i in range(t_max):
         # this is for faking a batch:
         inputs = torch.tensor(state, dtype=torch.float32).unsqueeze(dim=0).to(device)
         inputs.requires_grad = True

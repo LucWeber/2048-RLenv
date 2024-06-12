@@ -3,6 +3,9 @@ import argparse
 from types import SimpleNamespace
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
+import time
+import openai
 
 from RLenv_2048.configs import default_config
 from RLenv_2048.models import MODEL_REGISTER
@@ -65,3 +68,6 @@ def train_policy(config, policy, policy_baseline=None, **kwargs):
   print(f'Trained mean reward: {sum(rewards) / len(rewards)}')
 
   return policy, policy_baseline
+
+
+
